@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS2 | Пики карт на матч</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Russo+One&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+        :root {
+            --cs-green-inactive: #3a633a;
+            --cs-bg-dark: #0f1419;
+            --cs-text-light: #E0E0E0;
+            --cs-text-grey: #b0b0b0;
+            --accent-orange: #ff8c00;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Russo One', sans-serif;
+            background: 
+                radial-gradient(ellipse at top left, rgba(255, 140, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(0, 162, 255, 0.15) 0%, transparent 60%),
+                linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 30%, var(--cs-bg-dark) 70%, #000000 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: rgba(15, 20, 25, 0.7);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 500;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .logo-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -1px;
+            text-shadow: 0 0 10px rgba(255, 140, 0, 0.5);
+        }
+        .page-title {
+            font-family: 'Russo One', sans-serif;
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+        }
+        .control-button {
+            font-family: 'Orbitron', sans-serif;
+            background: transparent;
+            border: 2px solid rgba(255, 140, 0, 0.5);
+            color: var(--accent-orange);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        .control-button:hover {
+            background: rgba(255, 140, 0, 0.2);
+            border-color: var(--accent-orange);
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(255, 140, 0, 0.4);
+            transform: translateY(-2px);
+        }
+        .container { 
+            position: relative; 
+            z-index: 2; 
+            max-width: 1600px; 
+            margin: 0 auto; 
+            padding: 120px 30px 50px 30px;
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+        }
+        .maps-container { perspective: 1200px; }
+        .maps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 35px; }
+        .map-card { height: 220px; position: relative; cursor: pointer; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d; clip-path: polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%); background-size: cover; background-position: center; filter: brightness(0.7) contrast(1.2); }
+        .map-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(145deg, rgba(10, 14, 26, 0.8) 0%, rgba(15, 20, 25, 0.6) 50%, rgba(26, 31, 46, 0.8) 100%); z-index: 2; transition: all 0.4s ease; }
+        .map-card:hover { transform: translateY(-15px) rotateX(8deg) rotateY(-2deg); filter: brightness(1) contrast(1.3); box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(255, 140, 0, 0.4); }
+        .map-card.banned { transform: scale(0.85) rotateX(-8deg); opacity: 0.3; filter: grayscale(100%) brightness(0.4); pointer-events: none; }
+        .map-card.final { transform: scale(1.15) translateY(-20px); filter: brightness(1.3) contrast(1.4) saturate(1.5); box-shadow: 0 40px 80px rgba(0, 0, 0, 0.8), 0 0 80px #59F559; z-index: 10; animation: finalCardGlow 2s ease-in-out infinite; pointer-events: none; }
+        .map-card[data-map="DUST2"] { background-image: url('img/dust2.jpg'); } .map-card[data-map="MIRAGE"] { background-image: url('img/mirage.jpg'); } .map-card[data-map="INFERNO"] { background-image: url('img/inferno.jpg'); } .map-card[data-map="ANCIENT"] { background-image: url('img/ancient.jpg'); } .map-card[data-map="ANUBIS"] { background-image: url('img/anubis.jpg'); } .map-card[data-map="NUKE"] { background-image: url('img/nuke.jpg'); } .map-card[data-map="TRAIN"] { background-image: url('img/train.jpg'); }
+        .map-content { position: relative; z-index: 3; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 30px 25px; }
+        .map-name { font-family: 'Orbitron', sans-serif; font-size: 2.2rem; font-weight: 700; color: #ffffff; margin-bottom: 10px; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; display: none; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+		@keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        .modal-overlay.hiding {
+            animation: fadeOut 0.5s ease-in forwards;
+        }
+        .cs-style-modal { display: flex; flex-direction: column; align-items: center; background: rgba(14, 28, 21, 0.85); border: 2px solid var(--cs-green-inactive); box-shadow: 0 0 25px rgba(89, 245, 89, 0.3); border-radius: 8px; padding: 30px 50px; width: 90%; max-width: 550px; }
+        .cs-modal-title { font-family: 'Russo One', sans-serif; font-size: 2.4rem; color: var(--cs-text-light); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; text-align: center;}
+        .cs-modal-gamemode { display: flex; align-items: center; gap: 10px; margin-bottom: 30px; color: var(--cs-text-grey); font-size: 1.1rem; }
+        .cs-modal-gamemode svg { width: 24px; height: 24px; }
+        #inactiveAcceptButton { width: 100%; max-width: 300px; padding: 18px 0; background-color: var(--cs-green-inactive); border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 5px; color: var(--cs-text-grey); font-family: 'Russo One', sans-serif; font-size: 1.8rem; font-weight: 400; text-transform: uppercase; cursor: not-allowed; margin-bottom: 20px; box-shadow: inset 0 1px 1px rgba(255,255,255,0.1); }
+        #countdownTimer { color: var(--cs-text-light); font-family: 'Orbitron', sans-serif; font-size: 1.2rem; letter-spacing: 1px; }
+
+        /* --- ИСПРАВЛЕННЫЕ СТИЛИ ДЛЯ ВЕРТИКАЛЬНОГО РЕГУЛЯТОРА ГРОМКОСТИ --- */
+        .volume-control-container {
+            position: fixed;
+            bottom: 25px;
+            right: 30px;
+            z-index: 600;
+        }
+        .volume-slider-container {
+            position: absolute;
+            bottom: 60px; /* Расстояние от иконки */
+            left: 50%;
+            width: 50px; /* Ширина контейнера */
+            height: 180px; /* Высота контейнера */
+            background: rgba(15, 20, 25, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(-50%) translateY(10px);
+            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+        }
+        .volume-control-container:hover .volume-slider-container {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+        .volume-slider {
+            -webkit-appearance: none; appearance: none;
+            width: 140px; /* ДЛИНА ползунка */
+            height: 6px; /* ТОЛЩИНА ползунка */
+            background: rgba(0,0,0,0.4);
+            outline: none;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background 0.2s;
+            transform: rotate(-90deg); /* КЛЮЧЕВОЕ ИЗМЕНЕНИЕ */
+        }
+        .volume-slider:hover { background: rgba(0,0,0,0.6); }
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 18px; height: 18px;
+            background: var(--accent-orange);
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 10px rgba(255, 140, 0, 0.5);
+            transition: transform 0.2s ease;
+        }
+        .volume-slider::-webkit-slider-thumb:hover { transform: scale(1.1); }
+        .volume-slider::-moz-range-thumb {
+            width: 18px; height: 18px;
+            background: var(--accent-orange);
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 10px rgba(255, 140, 0, 0.5);
+        }
+        .volume-icon-wrapper {
+            width: 48px; height: 48px;
+            background: rgba(15, 20, 25, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; transition: all 0.3s ease;
+        }
+        .volume-icon-wrapper:hover {
+            background: rgba(255, 140, 0, 0.2);
+            border-color: var(--accent-orange);
+        }
+        #volumeIcon {
+            width: 24px; height: 24px;
+            color: var(--cs-text-light);
+            transition: color 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .page-title { display: none; }
+            .top-bar { padding: 10px 15px; }
+            .logo-title { font-size: 1.5rem; }
+            .logo-icon { width: 30px; height: 30px; }
+            .control-button { padding: 8px 12px; font-size: 0.8rem; }
+            .container { padding-top: 80px; }
+            .cs-modal-title { font-size: 1.8rem; }
+            .volume-control-container { bottom: 15px; right: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="top-bar">
+        <div class="logo-container">
+            <h1 class="logo-title">💥 Hey_Derzkiy</h1>
+        </div>
+        <div class="page-title">Пики Карт</div>
+        <div class="controls">
+            <button class="control-button" onclick="randomPick()">Случайный выбор</button>
+            <button class="control-button" onclick="resetGame()">Сбросить</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="maps-container">
+            <div class="maps-grid" id="mapsGrid"></div>
+        </div>
+    </div>
+        
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="cs-style-modal">
+            <h2 class="cs-modal-title">Ваш матч готов!</h2>
+            <div class="cs-modal-gamemode">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="premierIconGradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#3B82F6;" /><stop offset="100%" style="stop-color:#F59E0B;" /></linearGradient></defs><path d="M4.06287 3.1116C4.45331 2.42171 5.23352 2 6.10345 2H17.8966C18.7665 2 19.5467 2.42171 19.9371 3.1116L23.0406 8.77721C23.5939 9.74697 23.1163 11 22.0001 11H2C0.883693 11 0.406132 9.74697 0.959441 8.77721L4.06287 3.1116Z" fill="url(#premierIconGradient)"/><path d="M2 12L4 22H20L22 12H2Z" fill="#3B82F6"/></svg>
+                <span id="modalMapName"></span>
+            </div>
+            <button id="inactiveAcceptButton">Принять</button>
+            <div id="countdownTimer">0:20</div>
+        </div>
+    </div>
+
+    <!-- ВЕРТИКАЛЬНЫЙ РЕГУЛЯТОР ГРОМКОСТИ -->
+    <div class="volume-control-container">
+        <div class="volume-slider-container">
+            <input type="range" min="0" max="1" step="0.01" class="volume-slider" id="volumeSlider">
+        </div>
+        <div class="volume-icon-wrapper" id="volumeIconWrapper">
+            <svg id="volumeIcon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11 5L6 9H2V15H6L11 19V5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path id="volumeWaveLow" d="M14.5 8.5C15.2 9.2 15.5 10.5 15.5 12C15.5 13.5 15.2 14.8 14.5 15.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display: none;"/>
+                <path id="volumeWaveHigh" d="M18.5 5.5C20.5 7.5 21.5 9.5 21.5 12C21.5 14.5 20.5 16.5 18.5 18.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display: none;"/>
+                <path id="volumeMuteSlash" d="M1 1L23 23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"/>
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const setCookie = (name, value, days = 365) => {
+                let expires = "";
+                if (days) {
+                    const date = new Date();
+                    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                    expires = "; expires=" + date.toUTCString();
+                }
+                document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax";
+            }
+
+            const getCookie = (name) => {
+                const nameEQ = name + "=";
+                const ca = document.cookie.split(';');
+                for (let i = 0; i < ca.length; i++) {
+                    let c = ca[i];
+                    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+                }
+                return null;
+            }
+
+            const audioFiles = {
+                'ban': new Audio('sound/menu_invalid.wav'),
+                'accept': new Audio('sound/menu_accept.wav'),
+                'beep': new Audio('sound/beep07.wav'),
+                'final': new Audio('sound/arm_bomb.wav')
+            };
+
+            let currentVolume = 0.3;
+            let lastVolumeBeforeMute = 0.3;
+
+            const volumeSlider = document.getElementById('volumeSlider');
+            const volumeIconWrapper = document.getElementById('volumeIconWrapper');
+            const volumeIcon = document.getElementById('volumeIcon');
+            const waveLow = document.getElementById('volumeWaveLow');
+            const waveHigh = document.getElementById('volumeWaveHigh');
+            const muteSlash = document.getElementById('volumeMuteSlash');
+
+            const playSound = (soundId) => {
+                const audio = audioFiles[soundId];
+                if (audio) {
+                    audio.currentTime = 0;
+                    audio.volume = currentVolume;
+                    audio.play().catch(e => console.error("Audio play failed:", e));
+                }
+            }
+
+            const updateVolumeIcon = (volume) => {
+                muteSlash.style.display = 'none';
+                waveLow.style.display = 'none';
+                waveHigh.style.display = 'none';
+                volumeIcon.style.color = 'var(--cs-text-light)';
+
+                if (volume === 0) {
+                    muteSlash.style.display = 'block';
+                    volumeIcon.style.color = '#999';
+                } else if (volume > 0 && volume <= 0.5) {
+                    waveLow.style.display = 'block';
+                } else {
+                    waveLow.style.display = 'block';
+                    waveHigh.style.display = 'block';
+                }
+            }
+            
+            const initVolumeControl = () => {
+                const savedVolume = getCookie('csPickerVolume');
+                const initialVolume = savedVolume !== null ? parseFloat(savedVolume) : 0.3;
+                
+                currentVolume = initialVolume;
+                if (initialVolume > 0) {
+                    lastVolumeBeforeMute = initialVolume;
+                }
+                volumeSlider.value = initialVolume;
+                updateVolumeIcon(initialVolume);
+            }
+
+            volumeSlider.addEventListener('input', (e) => {
+                const newVolume = parseFloat(e.target.value);
+                currentVolume = newVolume;
+                if (newVolume > 0) {
+                    lastVolumeBeforeMute = newVolume;
+                }
+                updateVolumeIcon(newVolume);
+                setCookie('csPickerVolume', newVolume);
+            });
+
+            volumeIconWrapper.addEventListener('click', () => {
+                let newVolume;
+                if (currentVolume > 0) {
+                    newVolume = 0;
+                } else {
+                    newVolume = lastVolumeBeforeMute > 0 ? lastVolumeBeforeMute : 0.5;
+                }
+                currentVolume = newVolume;
+                volumeSlider.value = newVolume;
+                updateVolumeIcon(newVolume);
+                setCookie('csPickerVolume', newVolume);
+            });
+            initVolumeControl();
+            const maps = [
+                { name: 'DUST II', id: 'DUST2' }, { name: 'MIRAGE', id: 'MIRAGE' },
+                { name: 'INFERNO', id: 'INFERNO' }, { name: 'ANCIENT', id: 'ANCIENT' },
+                { name: 'ANUBIS', id: 'ANUBIS' }, { name: 'NUKE', id: 'NUKE' },
+                { name: 'TRAIN', id: 'TRAIN' }
+            ];
+
+            const mapsGrid = document.getElementById('mapsGrid');
+            const modalOverlay = document.getElementById('modalOverlay');
+            const countdownTimerElement = document.getElementById('countdownTimer');
+
+            let bannedMaps = [];
+            const totalMaps = maps.length;
+            const bansNeeded = totalMaps - 1;
+            let isGameOver = false;
+            let countdownInterval;
+            let isPickingRandomly = false;
+
+            const init = () => {
+                isGameOver = false;
+                isPickingRandomly = false;
+                bannedMaps = [];
+                mapsGrid.innerHTML = '';
+                
+                modalOverlay.style.display = 'none';
+                clearInterval(countdownInterval);
+
+                maps.forEach(map => {
+                    const card = document.createElement('div');
+                    card.className = 'map-card';
+                    card.dataset.map = map.id;
+                    card.innerHTML = `<div class="map-content"><h3 class="map-name">${map.name}</h3></div>`;
+                    card.addEventListener('click', () => handleMapClick(card, map.id));
+                    mapsGrid.appendChild(card);
+                });
+            };
+
+            const handleMapClick = (cardElement, mapId) => {
+                if (isGameOver || bannedMaps.includes(mapId) || isPickingRandomly) return;
+                
+                playSound('ban');
+                cardElement.classList.add('banned');
+                bannedMaps.push(mapId);
+                
+                if (bannedMaps.length === bansNeeded) {
+                    endGame();
+                }
+            };
+
+            const endGame = () => {
+                isGameOver = true;
+                const finalMap = maps.find(map => !bannedMaps.includes(map.id));
+                
+                setTimeout(() => {
+                    if (finalMap) {
+                        playSound('accept');
+                        const finalCard = document.querySelector(`.map-card[data-map="${finalMap.id}"]`);
+                        if (finalCard) { finalCard.classList.add('final'); }
+                        setTimeout(() => showCSStyleModal(finalMap.name), 500); 
+                    }
+                }, 500);
+            };
+            
+            const startRandomPick = () => {
+                if (isPickingRandomly) return;
+                
+                resetGame();
+                isPickingRandomly = true;
+
+                setTimeout(() => {
+                    let availableMaps = [...maps];
+                    for (let i = availableMaps.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [availableMaps[i], availableMaps[j]] = [availableMaps[j], availableMaps[i]];
+                    }
+                    
+                    let banIndex = 0;
+                    const banInterval = setInterval(() => {
+                        if (banIndex < bansNeeded) {
+                            const mapToBan = availableMaps[banIndex];
+                            const cardToBan = document.querySelector(`.map-card[data-map="${mapToBan.id}"]`);
+                            if (cardToBan) {
+                                playSound('ban');
+                                cardToBan.classList.add('banned');
+                                bannedMaps.push(mapToBan.id);
+                            }
+                            banIndex++;
+                        } else {
+                            clearInterval(banInterval);
+                            isPickingRandomly = false;
+                            endGame();
+                        }
+                    }, 1000);
+                }, 100);
+            };
+
+            const showCSStyleModal = (mapName) => { 
+                const modalMapNameElement = document.getElementById('modalMapName');
+                if (modalMapNameElement) {
+                    modalMapNameElement.textContent = `Битва титанов • ${mapName}`;
+                }
+                modalOverlay.style.display = 'flex';
+                let timeLeft = 20;
+                countdownTimerElement.textContent = `0:${timeLeft}`;
+
+                countdownInterval = setInterval(() => {
+                    playSound('beep');
+                    timeLeft--;
+                    countdownTimerElement.textContent = `0:${timeLeft < 10 ? '0' : ''}${timeLeft}`;
+
+                    if (timeLeft <= 0) {
+                        clearInterval(countdownInterval);
+                        setTimeout(() => {
+                            const finalSound = audioFiles['final'];
+                            if(finalSound) {
+                                finalSound.currentTime = 0;
+                                finalSound.volume = currentVolume;
+                                finalSound.play();
+                                fadeOutAndReset(finalSound, 500);
+                            }
+                        }, 1000); 
+                    }
+                }, 1000);
+            };
+			
+            const hideModalAndReset = () => {
+			    resetGame();
+                const modalOverlay = document.getElementById('modalOverlay');
+                modalOverlay.classList.add('hiding');
+                modalOverlay.addEventListener('animationend', () => {
+                    modalOverlay.classList.remove('hiding');
+                }, { once: true });
+            };
+
+            const fadeOutAndReset = (audio, fadeDuration) => {
+                const startVolume = audio.volume;
+                const fadeInterval = 50;
+                const volumeStep = startVolume / (fadeDuration / fadeInterval);
+
+                const fade = setInterval(() => {
+                    if (audio.volume > volumeStep) {
+                        audio.volume -= volumeStep;
+                    } else {
+                        audio.volume = 0;
+                        audio.pause();
+                        clearInterval(fade);
+                        hideModalAndReset();
+                    }
+                }, fadeInterval);
+            };
+
+            window.resetGame = () => {
+                clearInterval(countdownInterval);
+                isPickingRandomly = false;
+                init();
+            };
+            
+            window.randomPick = () => {
+                startRandomPick();
+            };
+
+            init();
+        });
+    </script>
+</body>
+</html>
